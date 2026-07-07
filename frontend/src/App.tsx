@@ -36,6 +36,7 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false)
   const [eventId, setEventId] = useState('')
   const [status, setStatus] = useState('')
   const [page, setPage] = useState(1)
@@ -48,6 +49,7 @@ function App() {
 
   const loadData = async () => {
     setLoading(true)
+    setError('')
     try {
       const [eventsRes, bookingsRes] = await Promise.all([
         fetch(`${API_URL}/events`),
@@ -65,6 +67,7 @@ function App() {
       setError(err instanceof Error ? err.message : 'Unexpected error')
     } finally {
       setLoading(false)
+      setHasLoadedOnce(true)
     }
   }
 
@@ -156,49 +159,70 @@ function App() {
           </div>
         </div>
 
-        {error ? <p className="error">{error}</p> : null}
-        {loading ? <p className="muted">Loading bookings…</p> : null}
+        {error ? (
+          <div className="state state-error" role="alert">
+            <strong>Unable to load bookings right now.</strong>
+            <p>{error}</p>
+            <button type="button" onClick={() => void loadData()}>
+              Try again
+            </button>
+          </div>
+        ) : null}
 
-        {!loading && bookings ? (
-          <>
-            <table>
-              <thead>
-                <tr>
-                  <th>Reference</th>
-                  <th>Event</th>
-                  <th>Customer</th>
-                  <th>Seats</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.items.map((booking) => (
-                  <tr key={booking.id}>
-                    <td>{booking.bookingReference}</td>
-                    <td>{booking.event?.name}</td>
-                    <td>{booking.customerName}</td>
-                    <td>{booking.seats}</td>
-                    <td>
-                      <span className={`pill ${booking.status.toLowerCase()}`}>{booking.status}</span>
-                      {booking.failureReason ? <div className="reason">{booking.failureReason}</div> : null}
-                    </td>
+        {loading && !hasLoadedOnce ? (
+          <div className="state state-loading" aria-live="polite">
+            <div className="spinner" aria-hidden="true" />
+            <p>Loading dashboard data…</p>
+          </div>
+        ) : null}
+
+        {!loading && !error && bookings ? (
+          bookings.items.length > 0 ? (
+            <>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Reference</th>
+                    <th>Event</th>
+                    <th>Customer</th>
+                    <th>Seats</th>
+                    <th>Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {bookings.items.map((booking) => (
+                    <tr key={booking.id}>
+                      <td>{booking.bookingReference}</td>
+                      <td>{booking.event?.name}</td>
+                      <td>{booking.customerName}</td>
+                      <td>{booking.seats}</td>
+                      <td>
+                        <span className={`pill ${booking.status.toLowerCase()}`}>{booking.status}</span>
+                        {booking.failureReason ? <div className="reason">{booking.failureReason}</div> : null}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-            <div className="pagination">
-              <button disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
-                Previous
-              </button>
-              <span>
-                Page {page} of {totalPages}
-              </span>
-              <button disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}>
-                Next
-              </button>
+              <div className="pagination">
+                <button disabled={page === 1} onClick={() => setPage((current) => Math.max(1, current - 1))}>
+                  Previous
+                </button>
+                <span>
+                  Page {page} of {totalPages}
+                </span>
+                <button disabled={page === totalPages} onClick={() => setPage((current) => current + 1)}>
+                  Next
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="state state-empty">
+              <strong>No bookings found.</strong>
+              <p>Try a different filter or create a new booking.</p>
             </div>
-          </>
+          )
         ) : null}
       </section>
     </div>

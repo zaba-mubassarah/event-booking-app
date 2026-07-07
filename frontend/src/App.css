@@ -118,3 +118,49 @@ td {
   color: #b91c1c;
   margin-bottom: 12px;
 }
+
+.state {
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.state-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #374151;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #d1d5db;
+  border-top-color: #4f46e5;
+  animation: spin 0.8s linear infinite;
+}
+
+.state-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.state-error p,
+.state-empty p {
+  margin: 6px 0 0;
+}
+
+.state-empty {
+  text-align: center;
+  color: #374151;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
