@@ -2,40 +2,25 @@
 
 A small full-stack event booking application built with NestJS, PostgreSQL, Redis/BullMQ, and React.
 
-## What is included
-- NestJS backend with booking API, queue processing, and seeded events
-- PostgreSQL-backed persistence for events and bookings
-- Redis queue worker for asynchronous booking confirmation
-- React dashboard with filters, pagination, and a booking form
-
-## How it works
-- POST /bookings accepts a booking request immediately and returns 202-style acceptance payload.
-- The booking is stored as PENDING and enqueued for asynchronous processing.
-- The worker validates the event, checks remaining seats, and updates the booking status to CONFIRMED or FAILED.
-- Overbooking is prevented with a pessimistic write lock during the transaction that updates the event seat counter.
-- Duplicate submissions are prevented with a unique requestId constraint and an early duplicate check.
-
-## Run locally
+## Setup and run
 
 Prerequisites:
 - Docker Desktop running
 - Node.js and npm installed
 
-### 1. Start infrastructure
-Use Docker:
+### 1. Start the infrastructure
+Run the following commands to start PostgreSQL and Redis:
 
 ```bash
 docker run --name postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=event_booking -p 5432:5432 -d postgres:16
 docker run --name redis -p 6379:6379 -d redis:7
 ```
 
-If Docker Desktop is already running and the containers exist, you can start them with:
+If the containers already exist, you can start them with:
 
 ```bash
 docker start postgres redis
 ```
-
-If you see an error about the Docker daemon, start Docker Desktop first and wait until it shows that it is running.
 
 ### 2. Install dependencies
 Open two terminals and run:
@@ -69,12 +54,16 @@ npm run dev
 
 Then open http://localhost:5173.
 
-## Design notes
-- The queue ensures the booking endpoint remains fast.
-- The worker uses a transaction with a pessimistic write lock so concurrent requests cannot overbook the same event.
-- The unique requestId index prevents duplicate submissions from creating additional bookings.
+## Key design decisions
 
-## Next improvements
-- Add Docker Compose for PostgreSQL, Redis, backend, and frontend
-- Add automated tests around concurrency and duplicate handling
-- Add auth and better error handling
+- Booking requests are accepted immediately and stored as PENDING so the API remains responsive.
+- A background queue worker processes each booking asynchronously, which keeps the booking endpoint fast.
+- Overbooking is prevented by running the seat update inside a database transaction with a pessimistic write lock on the event row. This blocks competing updates and ensures the seat count is checked and updated safely.
+- Duplicates are prevented by using a unique requestId for each booking attempt and by checking for an existing requestId before creating a new booking. The database also enforces a unique index on requestId for protection under concurrent requests.
+
+## What I would improve with more time
+
+- Add Docker Compose so the full stack can be started with a single command.
+- Add automated tests for concurrency and duplicate handling.
+- Add authentication, stronger validation, and better error handling.
+- Improve the UI with clearer booking feedback and reservation history.
