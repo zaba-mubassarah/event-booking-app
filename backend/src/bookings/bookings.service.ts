@@ -78,18 +78,23 @@ export class BookingsService implements OnModuleInit {
     }
 
     try {
+      this.logger.log(`Processing booking ${booking.id} inline during request`);
+      await this.processBooking(booking.id);
+
+      const updatedBooking = await this.bookingRepository.findOne({ where: { id: booking.id } });
       if (this.bookingsQueue) {
         await this.bookingsQueue.add('process-booking', { bookingId: booking.id }, { attempts: 3, backoff: { type: 'exponential', delay: 1000 } });
-        return { bookingReference, status: 'PENDING', message: 'Booking accepted and queued' };
       }
 
-      this.logger.warn(`Queue unavailable, processing booking ${booking.id} inline`);
-      await this.processBooking(booking.id);
-      const updatedBooking = await this.bookingRepository.findOne({ where: { id: booking.id } });
+      const status = updatedBooking?.status || 'PENDING';
       return {
         bookingReference,
-        status: updatedBooking?.status || 'PENDING',
-        message: 'Booking accepted and processed locally',
+        status,
+        message: status === 'CONFIRMED'
+          ? 'Booking accepted and confirmed'
+          : status === 'FAILED'
+            ? 'Booking accepted but could not be confirmed'
+            : 'Booking accepted and queued',
       };
     } catch (error) {
       this.logger.error(`Booking processing failed for ${booking.id}: ${error instanceof Error ? error.message : String(error)}`);
