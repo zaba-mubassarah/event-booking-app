@@ -53,7 +53,7 @@ function App() {
     try {
       const [eventsRes, bookingsRes] = await Promise.all([
         fetch(`${API_URL}/events`),
-        fetch(`${API_URL}/bookings?page=${page}&limit=8${eventId ? `&eventId=${eventId}` : ''}${status ? `&status=${status}` : ''}`),
+        fetch(`${API_URL}/bookings?page=${page}&limit=5${eventId ? `&eventId=${eventId}` : ''}${status ? `&status=${status}` : ''}`),
       ])
       if (!eventsRes.ok || !bookingsRes.ok) {
         throw new Error('Unable to load dashboard data')
